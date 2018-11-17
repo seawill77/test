@@ -1,0 +1,871 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "MLWorkshop.ipynb",
+      "version": "0.3.2",
+      "provenance": [],
+      "collapsed_sections": [
+        "mTxDb6gFMJf7",
+        "8Q9GBB01MOTx",
+        "KpFfBugEW6nn",
+        "TYh4Jwyc4T7N",
+        "UNDx7yr99KNT",
+        "_iy_2VSf9XG0",
+        "6vtklfg64b4-",
+        "FA4MxzOtBm6v",
+        "6bf7Z99-0dWx",
+        "qDS0NIQ42Vrm",
+        "vcoaE6Vh3WbK",
+        "aP-7RvBJL6N_",
+        "MGMQvRC97Eqf"
+      ],
+      "toc_visible": true,
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "accelerator": "GPU"
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/robeartoe/APIWorkshop/blob/master/MLWorkshop.ipynb\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "wkb0z6fP4Yyt",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "## Introduction to GCP ML API's"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "qEOFOAEGAfR7",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Install required python libraries:"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "RwVJ9yJ9p6s2",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "!pip install --upgrade google-cloud-vision\n",
+        "!pip install --upgrade google-cloud-speech\n",
+        "!pip install --upgrade google-cloud-language\n",
+        "!pip install --upgrade google-cloud-texttospeech"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "O5mbgTZQAhtl",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Upload Service Account Key File:"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "NyOuwVtfgESB",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "from google.colab import files\n",
+        "uploaded = files.upload()\n",
+        "\n",
+        "for fn in uploaded.keys():\n",
+        "  print('User uploaded file \"{name}\" with length {length} bytes'.format(name=fn, length=len(uploaded[fn])))"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "Q6qrw2u5AkBJ",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Set Enivornment Variable so Libraries can find Service Account Key:\n",
+        "\n",
+        "Note: Make sure to change the file name to your file name!"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "OUmLdnxbtGGT",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "import os\n",
+        "\n",
+        "# Imports Credential File:\n",
+        "os.environ[\"GOOGLE_APPLICATION_CREDENTIALS\"] = \"AutoMLWorkshop-620fb45c9b68.json\"\n",
+        "print(\"Service Account Key: {}\".format(os.environ[\"GOOGLE_APPLICATION_CREDENTIALS\"]))"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "DZ3PCwNV45kY",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "## Cloud Vision"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "dvHWk_uPLMHs",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Print Labels:"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "XoXELKvqQSbR",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "![alt text](https://www.elastic.co/assets/bltada7771f270d08f6/enhanced-buzz-1492-1379411828-15.jpg)"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "Ho30nQiuLMeQ",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "def labelAnnotation(url):\n",
+        "  # Imports the Google Cloud client library\n",
+        "  from google.cloud import vision\n",
+        "  from google.cloud.vision import types\n",
+        "  # Instantiates a client\n",
+        "  client = vision.ImageAnnotatorClient()\n",
+        "\n",
+        "  response = client.annotate_image({\n",
+        "     'image': {'source': \n",
+        "               {'image_uri': url}\n",
+        "              },\n",
+        "  })\n",
+        "\n",
+        "  # Detect and Print Labels:\n",
+        "  labels = response.label_annotations\n",
+        "  print(\"Labels: \")\n",
+        "  for label in labels:\n",
+        "    print(\"Description: \", label.description, \"Confidence: \", label.score)\n",
+        "  \n",
+        "# labelAnnotation(\"https://www.elastic.co/assets/bltada7771f270d08f6/enhanced-buzz-1492-1379411828-15.jpg\")\n",
+        "# labelAnnotation(\"https://storage.googleapis.com/weatherwarning-149901.appspot.com/Photography/Japan/_DSC0108.JPG\")"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "LvKtMXdGqfMh",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "![alt text]( https://storage.googleapis.com/weatherwarning-149901.appspot.com/Photography/Japan/_DSC0108.JPG)"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "xz6B0_7iLb7V",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Detect Landmarks:\n",
+        "\n",
+        "Documentation : https://cloud.google.com/vision/docs/detecting-landmarks\n",
+        "\n"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "bm8Oz9QPLgIc",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "![alt text](https://storage.googleapis.com/automlworkshop-216804-vcm/Bridge.jpg)"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "pspQWNyEHh8K",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "# Detect Landmarks:\n",
+        "\n",
+        "def landmarkDetection(uri):\n",
+        "    \"\"\"Detects logos in the file located in Google Cloud Storage or on the Web.\n",
+        "    \"\"\"\n",
+        "    # Imports the Google Cloud client library\n",
+        "    from google.cloud import vision\n",
+        "    from google.cloud.vision import types\n",
+        "    \n",
+        "    client = vision.ImageAnnotatorClient()\n",
+        "    image = vision.types.Image()\n",
+        "    image.source.image_uri = uri\n",
+        "\n",
+        "    response = client.landmark_detection(image=image)\n",
+        "       \n",
+        "#     print(response) #Uncomment this line, to get a more detailed response!  \n",
+        "    landmarks = response.landmark_annotations\n",
+        "    print('Landmark:')\n",
+        "\n",
+        "    for landmark in landmarks:\n",
+        "        print(landmark.description)\n",
+        "        \n",
+        "# landmarkDetection(\"https://storage.googleapis.com/automlworkshop-216804-vcm/Bridge.jpg\")\n",
+        "# landmarkDetection(\"https://storage.googleapis.com/weatherwarning-149901.appspot.com/Photography/Japan/_DSC0192.JPG\")"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "MdRNtUkCqxRe",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "![alt text](https://storage.googleapis.com/weatherwarning-149901.appspot.com/Photography/Japan/_DSC0192.JPG)"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "mTxDb6gFMJf7",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Detect Logos:"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "oSXKGnjRRWXq",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "![alt text](https://www.gstatic.com/images/branding/product/2x/cloud_512dp.png)"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "Ya8eY83qH9xS",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "# Detect Logos:\n",
+        "# https://cloud.google.com/vision/docs/detecting-logos\n",
+        "\n",
+        "\n",
+        "def detect_logos_uri(uri):\n",
+        "    \"\"\"Detects logos in the file located in Google Cloud Storage or on the Web.\n",
+        "    \"\"\"\n",
+        "    # Imports the Google Cloud client library\n",
+        "    from google.cloud import vision\n",
+        "    from google.cloud.vision import types\n",
+        "    \n",
+        "    client = vision.ImageAnnotatorClient()\n",
+        "    image = vision.types.Image()\n",
+        "    image.source.image_uri = uri\n",
+        "\n",
+        "    response = client.logo_detection(image=image)\n",
+        "#     print(response) #Uncomment this line, to get a more detailed response!  \n",
+        "    logos = response.logo_annotations\n",
+        "    print('Logos:')\n",
+        "\n",
+        "    for logo in logos:\n",
+        "        print(logo.description)\n",
+        "detect_logos_uri(\"https://www.gstatic.com/images/branding/product/2x/cloud_512dp.png\")"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "8Q9GBB01MOTx",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Detect Text and Numbers:\n"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "49ompq7xV78b",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "![alt text](https://s3.amazonaws.com/production-wordpress-assets/blog/wp-content/uploads/2016/11/29074529/500-internal-server-error.png)"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "B_jQbTb0MRJ6",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "def detect_text_uri(uri):\n",
+        "    \"\"\"Detects logos in the file located in Google Cloud Storage or on the Web.\n",
+        "    \"\"\"\n",
+        "    # Imports the Google Cloud client library\n",
+        "    from google.cloud import vision\n",
+        "    from google.cloud.vision import types\n",
+        "    \n",
+        "    client = vision.ImageAnnotatorClient()\n",
+        "    image = vision.types.Image()\n",
+        "    image.source.image_uri = uri\n",
+        "\n",
+        "    response = client.text_detection(image=image)\n",
+        "    texts = response.text_annotations\n",
+        "    print('Texts:')\n",
+        "\n",
+        "    for text in texts:\n",
+        "        print(text.description)\n",
+        "detect_text_uri(\"https://s3.amazonaws.com/production-wordpress-assets/blog/wp-content/uploads/2016/11/29074529/500-internal-server-error.png\")"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "KpFfBugEW6nn",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Detect Handwritten Text:"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "iWGYbMqmbgYj",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "![alt text](https://i.redd.it/7nw3ercwgj011.jpg)"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "N5z3jNN3W-ZR",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "def detect_document_uri(uri):\n",
+        "    \"\"\"Detects document features in the file located in Google Cloud\n",
+        "    Storage.\"\"\"\n",
+        "    # Imports the Google Cloud client library\n",
+        "    from google.cloud import vision\n",
+        "    from google.cloud.vision import types\n",
+        "    \n",
+        "    client = vision.ImageAnnotatorClient()\n",
+        "    image = vision.types.Image()\n",
+        "    image.source.image_uri = uri\n",
+        "    \n",
+        "    response = client.document_text_detection(image=image,image_context={'language_hints':'en-t-i0-handwrit'})\n",
+        "\n",
+        "    for page in response.full_text_annotation.pages:\n",
+        "        for block in page.blocks:\n",
+        "            print('\\nBlock confidence: {}\\n'.format(block.confidence))\n",
+        "\n",
+        "            for paragraph in block.paragraphs:\n",
+        "                print('Paragraph confidence: {}'.format(\n",
+        "                    paragraph.confidence))\n",
+        "\n",
+        "                for word in paragraph.words:\n",
+        "                    word_text = ''.join([\n",
+        "                        symbol.text for symbol in word.symbols\n",
+        "                    ])\n",
+        "                    print('Word text: {} (confidence: {})'.format(\n",
+        "                        word_text, word.confidence))\n",
+        "                    \n",
+        "#                     If you want every single symbol in a paragraph:\n",
+        "\n",
+        "#                     for symbol in word.symbols:\n",
+        "#                         print('\\tSymbol: {} (confidence: {})'.format(\n",
+        "#                             symbol.text, symbol.confidence))\n",
+        "\n",
+        "detect_document_uri(\"https://i.redd.it/7nw3ercwgj011.jpg\")"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "TYh4Jwyc4T7N",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "## Cloud Translate"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "UNDx7yr99KNT",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Translate English to Another Language:"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "JeVxYFS31-MN",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "# Cloud Translate:\n",
+        "# Imports the Google Cloud client library\n",
+        "from google.cloud import translate\n",
+        "# Instantiates a client\n",
+        "translate_client = translate.Client()\n",
+        "\n",
+        "# The text to translate\n",
+        "text = u'Hello World!'\n",
+        "# The target language\n",
+        "target = 'es'\n",
+        "\n",
+        "# Translates some text into another language:\n",
+        "translation = translate_client.translate(\n",
+        "    text,\n",
+        "    target_language=target)\n",
+        "\n",
+        "print(u'Text: {}'.format(text))\n",
+        "print(u'Translation: {}'.format(translation['translatedText']))\n",
+        "\n"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "CdNegORq3OXS",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "# Cloud Translate:\n",
+        "# Imports the Google Cloud client library\n",
+        "from google.cloud import translate\n",
+        "\n",
+        "\"\"\"Lists all available languages.\"\"\"\n",
+        "translate_client = translate.Client()\n",
+        "\n",
+        "results = translate_client.get_languages()\n",
+        "\n",
+        "for language in results:\n",
+        "    print(u'{name} ({language})'.format(**language))"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "_iy_2VSf9XG0",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Detect Language of Incoming Text:"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "poFEWWOy3k1L",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "# Cloud Translate:\n",
+        "# Imports the Google Cloud client library\n",
+        "from google.cloud import translate\n",
+        "\n",
+        "\"\"\"Detects the text's language.\"\"\"\n",
+        "translate_client = translate.Client()\n",
+        "\n",
+        "# The text to detect:\n",
+        "text = u'Muchas Gracias!'\n",
+        "\n",
+        "# Text can also be a sequence of strings, in which case this method\n",
+        "# will return a sequence of results for each text.\n",
+        "result = translate_client.detect_language(text)\n",
+        "\n",
+        "print('Text: {}'.format(text))\n",
+        "print('Confidence: {}'.format(result['confidence']))\n",
+        "print('Language: {}'.format(result['language']))"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "4EwVa0IR9CnI",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "![alt text](https://sagedandconfused.files.wordpress.com/2013/12/tumblr_mh9rzpg2se1qd6sqao1_400.png)"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "6vtklfg64b4-",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "## Cloud Natural Language"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "FA4MxzOtBm6v",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Analyzing Sentiment:\n",
+        "\n",
+        "Inspects the given text and identifies the prevailing emotional opinion within the text, especially to determine a writer's attitude as positive, negative, or neutral."
+      ]
+    },
+    {
+      "metadata": {
+        "id": "9KI2ZdxT4btS",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "def getSentiment(text):\n",
+        "  # Imports the Google Cloud client library\n",
+        "  from google.cloud import language\n",
+        "  from google.cloud.language import enums\n",
+        "  from google.cloud.language import types\n",
+        "\n",
+        "  # Instantiates a client\n",
+        "  client = language.LanguageServiceClient()\n",
+        "\n",
+        "  # The text to analyze\n",
+        "#   text = u'Whatever you want, I don\\'t care.'\n",
+        "  document = types.Document(\n",
+        "      content=text,\n",
+        "      type=enums.Document.Type.PLAIN_TEXT)\n",
+        "\n",
+        "  # Detects the sentiment of the text\n",
+        "  sentiment = client.analyze_sentiment(document=document).document_sentiment\n",
+        "\n",
+        "  print('Text: {}'.format(text))\n",
+        "  print('Sentiment: {}, {}'.format(sentiment.score, sentiment.magnitude))\n",
+        "getSentiment(\"Whatever you want, I don\\'t care.\")\n",
+        "getSentiment(\"It's getting chilly outside! This is great!\")"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "h7W3_lEvzJpn",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "![alt text](https://storage.googleapis.com/automlworkshop-216804-vcm/Screen%20Shot%202018-11-08%20at%2012.39.32%20PM.png)"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "6bf7Z99-0dWx",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Analyzing Entity Analysis \n",
+        "Inspects the given text for known entities (proper nouns such as public figures, landmarks, etc.), and returns information about those entities."
+      ]
+    },
+    {
+      "metadata": {
+        "id": "F5NxgPcy0wda",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "def entities_text(text):\n",
+        "    import six \n",
+        "    # Imports the Google Cloud client library\n",
+        "    from google.cloud import language\n",
+        "    from google.cloud.language import enums\n",
+        "    from google.cloud.language import types\n",
+        "\n",
+        "    \"\"\"Detects entities in the text.\"\"\"\n",
+        "    client = language.LanguageServiceClient()\n",
+        "\n",
+        "    if isinstance(text, six.binary_type):\n",
+        "        text = text.decode('utf-8')\n",
+        "\n",
+        "    # Instantiates a plain text document.\n",
+        "    document = types.Document(\n",
+        "        content=text,\n",
+        "        type=enums.Document.Type.PLAIN_TEXT)\n",
+        "\n",
+        "    # Detects entities in the document. You can also analyze HTML with:\n",
+        "    #   document.type == enums.Document.Type.HTML\n",
+        "    entities = client.analyze_entities(document).entities\n",
+        "\n",
+        "    # entity types from enums.Entity.Type\n",
+        "    entity_type = ('UNKNOWN', 'PERSON', 'LOCATION', 'ORGANIZATION',\n",
+        "                   'EVENT', 'WORK_OF_ART', 'CONSUMER_GOOD', 'OTHER')\n",
+        "\n",
+        "    for entity in entities:\n",
+        "        print('=' * 20)\n",
+        "        print(u'{:<16}: {}'.format('name', entity.name))\n",
+        "        print(u'{:<16}: {}'.format('type', entity_type[entity.type]))\n",
+        "        print(u'{:<16}: {}'.format('metadata', entity.metadata))\n",
+        "        print(u'{:<16}: {}'.format('salience', entity.salience))\n",
+        "        print(u'{:<16}: {}'.format('wikipedia_url',\n",
+        "              entity.metadata.get('wikipedia_url', '-')))\n",
+        "entities_text(\"Golden Gate Bridge, or the 23 de Abril Bridge?\")\n",
+        "entities_text(\"Hedgehog or is it a Porcupine?\")"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "YSrAiypG19V6",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "[Salience](https://cloud.google.com/natural-language/docs/basics#entity-analysis-response): indicates the importance or relevance of this entity to the entire document text. This score can assist information retrieval and summarization by prioritizing salient entities. Scores closer to 0.0 are less important, while scores closer to 1.0 are highly important."
+      ]
+    },
+    {
+      "metadata": {
+        "id": "qDS0NIQ42Vrm",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Analyzing Syntax of String:\n",
+        "Breaks up the given text into a series of sentences and tokens (generally, words) and provides linguistic information about those tokens."
+      ]
+    },
+    {
+      "metadata": {
+        "id": "6G5zpA3B2YIf",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "def syntax_text(text):\n",
+        "    # Imports the Google Cloud client library\n",
+        "    from google.cloud import language\n",
+        "    from google.cloud.language import enums\n",
+        "    from google.cloud.language import types\n",
+        "\n",
+        "    \"\"\"Detects syntax in the text.\"\"\"\n",
+        "    client = language.LanguageServiceClient()\n",
+        "\n",
+        "    if isinstance(text, six.binary_type):\n",
+        "        text = text.decode('utf-8')\n",
+        "\n",
+        "    # Instantiates a plain text document.\n",
+        "    document = types.Document(\n",
+        "        content=text,\n",
+        "        type=enums.Document.Type.PLAIN_TEXT)\n",
+        "\n",
+        "    # Detects syntax in the document. You can also analyze HTML with:\n",
+        "    #   document.type == enums.Document.Type.HTML\n",
+        "    tokens = client.analyze_syntax(document).tokens\n",
+        "\n",
+        "    # part-of-speech tags from enums.PartOfSpeech.Tag\n",
+        "    pos_tag = ('UNKNOWN', 'ADJ', 'ADP', 'ADV', 'CONJ', 'DET', 'NOUN', 'NUM',\n",
+        "               'PRON', 'PRT', 'PUNCT', 'VERB', 'X', 'AFFIX')\n",
+        "\n",
+        "    for token in tokens:\n",
+        "#         print(token)\n",
+        "        print(u'{}: {}'.format(pos_tag[token.part_of_speech.tag],\n",
+        "                               token.text.content))\n",
+        "syntax_text(\"Robert Sacre is the best Laker of all time, prove me wrong.\")"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "vcoaE6Vh3WbK",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "## Cloud Text to Speech & Cloud Speech to Text"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "aP-7RvBJL6N_",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Cloud Text to Speech"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "EGglyw7NeamO",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "from google.cloud import texttospeech\n",
+        "\n",
+        "# Instantiates a client\n",
+        "client = texttospeech.TextToSpeechClient()\n",
+        "\n",
+        "# Set the text input to be synthesized\n",
+        "synthesis_input = texttospeech.types.SynthesisInput(text=\"Hello, World!\")\n",
+        "\n",
+        "# Build the voice request, select the language code (\"en-US\") and the ssml\n",
+        "# voice gender (\"neutral\")\n",
+        "voice = texttospeech.types.VoiceSelectionParams(\n",
+        "    language_code='en-US',\n",
+        "    ssml_gender=texttospeech.enums.SsmlVoiceGender.NEUTRAL)\n",
+        "\n",
+        "# Select the type of audio file you want returned\n",
+        "audio_config = texttospeech.types.AudioConfig(\n",
+        "    audio_encoding=texttospeech.enums.AudioEncoding.LINEAR16)\n",
+        "\n",
+        "# Perform the text-to-speech request on the text input with the selected\n",
+        "# voice parameters and audio file type\n",
+        "response = client.synthesize_speech(synthesis_input, voice, audio_config)\n",
+        "\n",
+        "# The response's audio_content is binary.\n",
+        "with open('output.wav', 'wb') as out:\n",
+        "    # Write the response to the output file.\n",
+        "    out.write(response.audio_content)\n",
+        "    print('Audio content written to file \"output.wav\"')"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "id": "MGMQvRC97Eqf",
+        "colab_type": "text"
+      },
+      "cell_type": "markdown",
+      "source": [
+        "### Cloud Speech to Text"
+      ]
+    },
+    {
+      "metadata": {
+        "id": "Snq8ehAu7JkD",
+        "colab_type": "code",
+        "colab": {}
+      },
+      "cell_type": "code",
+      "source": [
+        "import io\n",
+        "\n",
+        "# Imports the Google Cloud client library\n",
+        "from google.cloud import speech\n",
+        "from google.cloud.speech import enums\n",
+        "from google.cloud.speech import types\n",
+        "\n",
+        "# Instantiates a client\n",
+        "client = speech.SpeechClient()\n",
+        "\n",
+        "# The name of the audio file to transcribe\n",
+        "file_name = 'output.wav'\n",
+        "\n",
+        "# Loads the audio into memory\n",
+        "with io.open(file_name, 'rb') as audio_file:\n",
+        "    content = audio_file.read()\n",
+        "    audio = types.RecognitionAudio(content=content)\n",
+        "\n",
+        "config = types.RecognitionConfig(\n",
+        "    encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,\n",
+        "    language_code='en-US')\n",
+        "\n",
+        "# Detects speech in the audio file\n",
+        "response = client.recognize(config, audio)\n",
+        "\n",
+        "\n",
+        "for result in response.results:\n",
+        "    print('Transcript: {}'.format(result.alternatives[0].transcript))"
+      ],
+      "execution_count": 0,
+      "outputs": []
+    }
+  ]
+}
